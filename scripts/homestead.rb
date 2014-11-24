@@ -22,6 +22,9 @@ class Homestead
     config.vm.network "forwarded_port", guest: 443, host: 44300
     config.vm.network "forwarded_port", guest: 3306, host: 33060
     config.vm.network "forwarded_port", guest: 5432, host: 54320
+    
+    # Configure Port Forwarding for Elasticsearch
+    config.vm.network "forwarded_port", guest:9200, host: 62000
 
     # Configure The Public Key For SSH Access
     config.vm.provision "shell" do |s|
@@ -35,6 +38,31 @@ class Homestead
         s.privileged = false
         s.inline = "echo \"$1\" > /home/vagrant/.ssh/$2 && chmod 600 /home/vagrant/.ssh/$2"
         s.args = [File.read(File.expand_path(key)), key.split('/').last]
+      end
+    end
+    
+    # Copy The Bash Aliases
+    config.vm.provision "shell" do |s|
+      s.inline = "cp /vagrant/aliases /home/vagrant/.bash_aliases"
+    
+    # Install Elasticsearch
+     config.vm.provision "shell" do |s|
+      s.path = "./scripts/elasticsearch.sh"
+     end
+
+    # Create project databases
+    settings["databases"].each do |db|
+      config.vm.provision "shell" do |s|
+        s.path = "./scripts/create-database.sh"
+        s.args = [db["name"]]
+      end
+    end
+
+    # Run migrations and seeds
+    settings["sites"].each do |site|
+      config.vm.provision "shell" do |s|
+        s.path = "./scripts/migrations-and-seeds.sh"
+        s.args = [site["map"]]
       end
     end
 
