@@ -44,6 +44,7 @@ class Homestead
     # Copy The Bash Aliases
     config.vm.provision "shell" do |s|
       s.inline = "cp /vagrant/aliases /home/vagrant/.bash_aliases"
+    end
     
     # Install Elasticsearch
      config.vm.provision "shell" do |s|
