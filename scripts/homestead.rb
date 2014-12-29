@@ -43,26 +43,56 @@ class Homestead
       s.inline = "cp /vagrant/aliases /home/vagrant/.bash_aliases"
     end
 
-     # Install Elasticsearch (optional)
-     config.vm.provision "shell" do |s|
-      s.path = "./scripts/elasticsearch.sh"
-     end
 
-    # Create project databases (optional)
-    settings["databases"].each do |db|
-      config.vm.provision "shell" do |s|
-        s.path = "./scripts/create-database.sh"
-        s.args = [db["name"]]
-      end
-    end
-
-    # Run migrations and seeds (optional)
+    # Create project databases with sites (optional)
     settings["sites"].each do |site|
-      config.vm.provision "shell" do |s|
-        s.path = "./scripts/migrations-and-seeds.sh"
-        s.args = [site["map"]]
-      end
+       config.vm.provision "shell" do |s|
+           if (site.has_key?("database"))
+               s.path = "./scripts/create-database.sh"
+               s.args = [site["map"],site["database"]]
+           end
+       end
     end
+
+    # run project migrations
+    if settings.has_key?("migrations")
+        settings["migrations"].each do |migration|
+            config.vm.provision "shell" do |s|
+                s.path = "./scripts/migrate.sh"
+                s.args = [migration["migrate"]]
+             end
+        end
+    end
+
+    # composer require developer packages
+    if settings.has_key?("developer")
+        settings["developer"].each do |install|
+           config.vm.provision "shell" do |s|
+               s.path = "./scripts/developer.sh"
+               s.args = [install["project"]]
+           end
+        end
+    end
+
+
+    # Install packages
+        if settings.has_key?("elasticsearch")
+            config.vm.provision "shell" do |s|
+                s.path = "./scripts/elasticsearch.sh"
+            end
+        end
+
+
+    # run project seeds
+    if settings.has_key?("seeds")
+         settings["seeds"].each do |seed|
+            config.vm.provision "shell" do |s|
+                s.path = "./scripts/seed.sh"
+                s.args = [seed["seed"]]
+            end
+         end
+    end
+
 
     # Register All Of The Configured Shared Folders
     settings["folders"].each do |folder|
@@ -70,17 +100,17 @@ class Homestead
     end
 
     # Install All The Configured Nginx Sites
-    settings["sites"].each do |site|
-      config.vm.provision "shell" do |s|
-          if (site.has_key?("hhvm") && site["hhvm"])
-            s.inline = "bash /vagrant/scripts/serve-hhvm.sh $1 $2"
-            s.args = [site["map"], site["to"]]
-          else
-            s.inline = "bash /vagrant/scripts/serve.sh $1 $2"
-            s.args = [site["map"], site["to"]]
-          end
-      end
-    end
+            settings["sites"].each do |site|
+             config.vm.provision "shell" do |s|
+                 if (site.has_key?("hhvm") && site["hhvm"])
+                   s.inline = "bash /vagrant/scripts/serve-hhvm.sh $1 $2"
+                   s.args = [site["map"], site["to"]]
+                 else
+                   s.inline = "bash /vagrant/scripts/serve.sh $1 $2"
+                   s.args = [site["map"], site["to"]]
+                 end
+             end
+           end
 
     # Configure All Of The Server Environment Variables
     if settings.has_key?("variables")

@@ -1,0 +1,40 @@
+---
+ip: "192.168.10.10"
+memory: 2048
+cpus: 1
+
+authorize: ~/.ssh/id_rsa.pub
+
+keys:
+    - ~/.ssh/id_rsa
+
+folders:
+    - map: ~/WorkRoom/projects
+      to: /home/vagrant/projects
+
+sites:
+    - map: testlab50
+      to: /home/vagrant/projects/testlab50/public
+      database: testlab50
+    - map: testlab60
+      to: /home/vagrant/projects/testlab60/public
+      database: testlab60
+
+migrations:
+    - migrate: testlab50
+
+seeds:
+    - seed: testlab50
+
+variables:
+    - key: APP_ENV
+      value: local
+
+developer:
+    - project: testlab50
+    - project: testlab60
+
+elasticsearch:
+
+
+
